@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bardic Beats — A Ye Olde Song Guessing Party Game</title>
+<style>
+  :root {
+    --bg: #fdf6e3;
+    --card: #fffdf7;
+    --ink: #2c1e16;
+    --muted: #6e5849;
+    --accent: #b84a27;
+    --accent-dark: #8f3518;
+    --gold: #d99b26;
+    --gold-bg: #fff4d6;
+    --green: #2d7a47;
+    --green-bg: #e7f6ec;
+    --red: #b53838;
+    --red-bg: #fdeaea;
+    --border: #e3d3b8;
+    --shadow: 0 6px 18px rgba(44, 30, 22, 0.08);
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.45;
+  }
+
+  .app {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .brand {
+    font-weight: bold;
+    font-size: 1.15rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .scoreboard-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .score-pill {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--ink);
+  }
+
+  .score-pill.active-player {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin: 8px 0 6px;
+    color: var(--accent);
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0 0 18px;
+  }
+
+  .hero-crest {
+    display: flex;
+    justify-content: center;
+    margin: 6px 0 10px;
+  }
+
+  .section-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .btn {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform 0.12s ease, background-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn.selected {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    color: var(--ink);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-size: 1.1rem;
+  }
+
+  .btn-primary:active {
+    background: var(--accent-dark);
+  }
+
+  .btn-hint {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    color: #5c3d00;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+
+  .round-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .turn-banner {
+    background: var(--gold-bg);
+    border: 1.5px solid var(--gold);
+    color: #5c3d00;
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+
+  .scroll-box {
+    background: #fbf2dc;
+    border: 2px solid #dfcaa4;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .clue-visual {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .clue-icon-badge {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 14px;
+    background: #fffdf7;
+    border: 2px solid #dfcaa4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+  }
+
+  .clue-points-tag {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: #fffdf7;
+    border: 1px solid #dfcaa4;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .bard-text {
+    font-size: 1.18rem;
+    font-style: italic;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .hint-box {
+    background: #fff8e6;
+    border-left: 4px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 1rem;
+  }
+
+  .hint-title {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8a5a00;
+    margin-bottom: 4px;
+  }
+
+  .guess-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .text-input {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 14px;
+    font-size: 1.05rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .text-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .mc-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .mc-card {
+    text-align: left;
+    justify-content: flex-start;
+    background: #fff;
+    border: 2px solid var(--border);
+    padding: 12px 14px;
+    min-height: 54px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .mc-song {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .mc-artist {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .feedback-banner {
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 8px;
+    margin-bottom: 14px;
+    text-align: center;
+    animation: popIn 0.28s ease-out;
+  }
+
+  .feedback-banner.win {
+    background: var(--green-bg);
+    border: 2px solid var(--green);
+    color: #194a29;
+  }
+
+  .feedback-banner.miss {
+    background: var(--red-bg);
+    border: 2px solid var(--red);
+    color: #6b1d1d;
+  }
+
+  .feedback-banner.nudge {
+    background: var(--gold-bg);
+    border: 2px solid var(--gold);
+    color: #5c3d00;
+  }
+
+  .feedback-heading {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 0 0 4px;
+  }
+
+  .reveal-answer {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
+    margin: 6px 0 0;
+  }
+
+  .final-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0 22px;
+  }
+
+  .final-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+  }
+
+  .final-row.winner {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header-bar">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 18V5l11-2v13" stroke="#b84a27" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="6" cy="18" r="3" fill="#d99b26" stroke="#b84a27" stroke-width="2"/>
+        <circle cx="17" cy="16" r="3" fill="#d99b26" stroke="#b84a27" stroke-width="2"/>
+      </svg>
+      <span>Bardic Beats</span>
+    </div>
+    <div id="scoreboardStrip" class="scoreboard-strip"></div>
+  </header>
+
+  <!-- START SCREEN -->
+  <main id="startScreen" class="card">
+    <div class="hero-crest">
+      <svg width="76" height="76" viewBox="0 0 76 76" fill="none" aria-hidden="true">
+        <circle cx="38" cy="38" r="35" fill="#fff4d6" stroke="#d99b26" stroke-width="3"/>
+        <path d="M22 48L26 26L38 35L50 26L54 48H22Z" fill="#d99b26" stroke="#8f3518" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="26" cy="23" r="3" fill="#b84a27"/>
+        <circle cx="38" cy="31" r="3" fill="#b84a27"/>
+        <circle cx="50" cy="23" r="3" fill="#b84a27"/>
+        <rect x="22" y="51" width="32" height="5" rx="2.5" fill="#8f3518"/>
+      </svg>
+    </div>
+    <h1>Bardic Beats</h1>
+    <p class="subtitle">Read the overly dramatic Old English riddle and name the modern hit song before thy kin steal the crown!</p>
+
+    <span class="section-label">How many players share this screen?</span>
+    <div class="player-grid" id="playerCountGrid">
+      <button type="button" class="btn selected" data-count="1">1</button>
+      <button type="button" class="btn" data-count="2">2</button>
+      <button type="button" class="btn" data-count="3">3</button>
+      <button type="button" class="btn" data-count="4">4</button>
+    </div>
+
+    <div style="margin-top: auto;">
+      <button type="button" id="startBtn" class="btn btn-primary">Begin the Revelry</button>
+    </div>
+  </main>
+
+  <!-- GAME SCREEN -->
+  <section id="gameScreen" class="card hidden">
+    <div class="round-meta">
+      <span id="roundLabel">Round 1 of 6</span>
+      <span id="turnBanner" class="turn-banner">Player 1's Turn</span>
+    </div>
+
+    <div class="scroll-box">
+      <div class="clue-visual">
+        <div id="clueEmoji" class="clue-icon-badge" aria-hidden="true">👑</div>
+        <div>
+          <span class="section-label" style="margin-bottom:2px;">Ye Olde Song Riddle</span>
+          <span id="pointsTag" class="clue-points-tag">Worth 3 pts</span>
+        </div>
+      </div>
+      <p id="songClueText" class="bard-text"></p>
+    </div>
+
+    <!-- HINT 1: BAND CLUE -->
+    <div id="artistHintBox" class="hint-box hidden">
+      <div class="hint-title">Bardic Clue on the Minstrels</div>
+      <div id="artistClueText"></div>
+    </div>
+
+    <!-- TEXT GUESS AREA -->
+    <form id="guessForm" class="guess-form">
+      <input
+        type="text"
+        id="guessInput"
+        class="text-input"
+        placeholder="Type the song title..."
+        autocomplete="off"
+        autocapitalize="words"
+      >
+      <button type="submit" class="btn btn-primary">Submit Guess</button>
+    </form>
+
+    <!-- HINT 2: MULTIPLE CHOICE CARDS -->
+    <div id="mcContainer" class="mc-grid hidden"></div>
+
+    <!-- NUDGE / RESULT FEEDBACK -->
+    <div id="feedbackBox" class="feedback-banner hidden">
+      <div id="feedbackHeading" class="feedback-heading"></div>
+      <div id="feedbackDetail" class="reveal-answer"></div>
+    </div>
+
+    <!-- HINT & GIVE UP BUTTONS -->
+    <div id="controlsRow" class="action-row">
+      <button type="button" id="hintBtn" class="btn btn-hint">Hint 1: Artist Clue</button>
+      <button type="button" id="giveUpBtn" class="btn btn-ghost">Yield Round</button>
+    </div>
+
+    <!-- NEXT ROUND BUTTON -->
+    <div id="nextRow" class="hidden" style="margin-top:auto;">
+      <button type="button" id="nextBtn" class="btn btn-primary">Next Song</button>
+    </div>
+  </section>
+
+  <!-- END SCREEN -->
+  <section id="endScreen" class="card hidden">
+    <div class="hero-crest">
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+        <circle cx="36" cy="36" r="33" fill="#e7f6ec" stroke="#2d7a47" stroke-width="3"/>
+        <path d="M24 22H48V34C48 40.6274 42.6274 46 36 46C29.3726 46 24 40.6274 24 34V22Z" fill="#d99b26" stroke="#8f3518" stroke-width="2.5"/>
+        <path d="M36 46V53M28 53H44" stroke="#8f3518" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1>Final Scores</h1>
+    <p id="winnerSubtitle" class="subtitle"></p>
+    <div id="finalScoresList" class="final-list"></div>
+    <div style="margin-top:auto;">
+      <button type="button" id="playAgainBtn" class="btn btn-primary">Play Again (Fresh Songs)</button>
+    </div>
+  </section>
+</div>
+
+<script>
+  const SONG_BANK = [
+    {
+      title: "Bohemian Rhapsody",
+      artist: "Queen",
+      emoji: "👑",
+      songClue: "Hark! A poor youth confesseth unto his mother that he hath slain a fellow, whilst spectral figures cry 'Galileo!' amidst thunderbolts and lightning.",
+      artistClue: "A royal quartet led by a mustachioed sovereign of the stage whose very name proclaims female monarchy.",
+      decoys: [
+        { title: "Stairway to Heaven", artist: "Led Zeppelin" },
+        { title: "Rocket Man", artist: "Elton John" },
+        { title: "Hotel California", artist: "Eagles" }
+      ]
+    },
+    {
+      title: "Shake It Off",
+      artist: "Taylor Swift",
+      emoji: "💃",
+      songClue: "Let the court jesters mock and the false-hearted scoundrels weave their deceit; I shall merely wiggle mine shoulders free of all vexation!",
+      artistClue: "A nimble-footed maiden minstrel renowned for penning heartfelt scrolls about past suitors and traversing grand eras.",
+      decoys: [
+        { title: "Bad Romance", artist: "Lady Gaga" },
+        { title: "Firework", artist: "Katy Perry" },
+        { title: "Uptown Funk", artist: "Mark Ronson & Bruno Mars" }
+      ]
+    },
+    {
+      title: "Sweet Caroline",
+      artist: "Neil Diamond",
+      emoji: "🎺",
+      songClue: "How wondrously pleasant hath this fair damsel become! Reaching hands touch hands, and the whole tavern bellows 'Bum, bum, bum!' in joyous chorus.",
+      artistClue: "A solitary troubadour bearing the surname of the hardest, most sparkling precious gemstone in the realm.",
+      decoys: [
+        { title: "Brown Eyed Girl", artist: "Van Morrison" },
+        { title: "Piano Man", artist: "Billy Joel" },
+        { title: "Hey Jude", artist: "The Beatles" }
+      ]
+    },
+    {
+      title: "Don't Stop Believin'",
+      artist: "Journey",
+      emoji: "🚂",
+      songClue: "A maid of a humble hamlet and a lad from southern Detroit board a midnight carriage bound for nowhere—cling tightly to thy faith!",
+      artistClue: "A band of melodic rockers whose name signifies a long voyage or pilgrimage from one realm to another.",
+      decoys: [
+        { title: "Livin' on a Prayer", artist: "Bon Jovi" },
+        { title: "Africa", artist: "Toto" },
+        { title: "Eye of the Tiger", artist: "Survivor" }
+      ]
+    },
+    {
+      title: "Dancing Queen",
+      artist: "ABBA",
+      emoji: "🪩",
+      songClue: "Behold yon youthful maiden of seventeen summers! She glide-steps across the tavern floor as sovereign of every tambourine and rhythmic jig.",
+      artistClue: "A legendary four-piece fellowship from the snowy north of Sweden whose palindromic name spells the same backward and forward.",
+      decoys: [
+        { title: "I Will Survive", artist: "Gloria Gaynor" },
+        { title: "Stayin' Alive", artist: "Bee Gees" },
+        { title: "Girls Just Want to Have Fun", artist: "Cyndi Lauper" }
+      ]
+    },
+    {
+      title: "Billie Jean",
+      artist: "Michael Jackson",
+      emoji: "🧤",
+      songClue: "This fair maiden claimeth I am the sire of her babe, yet I swear upon my moonwalking boots that she is merely a beauty who spun my head!",
+      artistClue: "The undisputed King of Pop, famed for a single sequined gauntlet, a tilted fedora, and gliding backward across the stage.",
+      decoys: [
+        { title: "Purple Rain", artist: "Prince" },
+        { title: "Superstition", artist: "Stevie Wonder" },
+        { title: "Kiss", artist: "Prince" }
+      ]
+    },
+    {
+      title: "Rolling in the Deep",
+      artist: "Adele",
+      emoji: "🌊",
+      songClue: "There is a blaze igniting within my chest! We might have possessed the entire kingdom, yet thou didst cast my heart into the watery abyss.",
+      artistClue: "A powerhouse songbird of London town known simply by a single given name and albums numbered by her age.",
+      decoys: [
+        { title: "Umbrella", artist: "Rihanna" },
+        { title: "Halo", artist: "Beyoncé" },
+        { title: "Wrecking Ball", artist: "Miley Cyrus" }
+      ]
+    },
+    {
+      title: "Yellow Submarine",
+      artist: "The Beatles",
+      emoji: "⚓",
+      songClue: "In the village of my birth sailed a mariner who spoke of seas of green, wherein we all dwell inside a gilded, sun-colored underwater vessel!",
+      artistClue: "Four mop-topped lads from Liverpool named after six-legged insects with a musical twist in the spelling.",
+      decoys: [
+        { title: "Octopus's Garden", artist: "The Beatles" },
+        { title: "Rocket Man", artist: "Elton John" },
+        { title: "Mr. Tambourine Man", artist: "The Byrds" }
+      ]
+    },
+    {
+      title: "Uptown Funk",
+      artist: "Mark Ronson & Bruno Mars",
+      emoji: "🕶️",
+      songClue: "Halt and behold! I am far too scorching for the flames of Hades—call the town watch and the bucket brigade, for the high-district groove shall deliver it unto thee!",
+      artistClue: "A dapper, velvet-voiced showman sharing his surname with the crimson fourth planet from the sun, teamed with a slick producer.",
+      decoys: [
+        { title: "Happy", artist: "Pharrell Williams" },
+        { title: "Can't Stop the Feeling!", artist: "Justin Timberlake" },
+        { title: "24K Magic", artist: "Bruno Mars" }
+      ]
+    },
+    {
+      title: "Take Me Home, Country Roads",
+      artist: "John Denver",
+      emoji: "⛰️",
+      songClue: "Almost paradise, West Virginia! O rustic dirt pathways, escort me back unto the mountain stronghold where I truly belong.",
+      artistClue: "A bespectacled folk bard whose surname matches the mile-high capital city of Colorado.",
+      decoys: [
+        { title: "Ring of Fire", artist: "Johnny Cash" },
+        { title: "Jolene", artist: "Dolly Parton" },
+        { title: "Sweet Home Alabama", artist: "Lynyrd Skynyrd" }
+      ]
+    },
+    {
+      title: "Eye of the Tiger",
+      artist: "Survivor",
+      emoji: "🐅",
+      songClue: "Rising up back upon the cobblestone street, I paid my coin and took my chances—behold the fierce gaze of the striped jungle beast!",
+      artistClue: "An eighties rock troupe whose very title means one who endures and outlasts every peril.",
+      decoys: [
+        { title: "We Are the Champions", artist: "Queen" },
+        { title: "Final Countdown", artist: "Europe" },
+        { title: "Beat It", artist: "Michael Jackson" }
+      ]
+    },
+    {
+      title: "Happy",
+      artist: "Pharrell Williams",
+      emoji: "☀️",
+      songClue: "Clap thy hands together if thou feelest like a chamber bereft of a roof! Naught can bring me down from this soaring state of sheer merriment.",
+      artistClue: "A perpetually youthful minstrel famous for wearing an extraordinarily tall mountie hat and producing countless hits.",
+      decoys: [
+        { title: "Walking on Sunshine", artist: "Katrina & The Waves" },
+        { title: "Good Vibrations", artist: "The Beach Boys" },
+        { title: "Lovely Day", artist: "Bill Withers" }
+      ]
+    },
+    {
+      title: "Livin' on a Prayer",
+      artist: "Bon Jovi",
+      emoji: "🎸",
+      songClue: "Young Thomas once labored upon the shipyard docks, while fair Gina toiled in the tavern—woe, we are halfway there, subsisting solely upon fervent supplication!",
+      artistClue: "New Jersey arena-rockers named after their big-haired frontman, Jon.",
+      decoys: [
+        { title: "Summer of '69", artist: "Bryan Adams" },
+        { title: "Pour Some Sugar on Me", artist: "Def Leppard" },
+        { title: "Every Breath You Take", artist: "The Police" }
+      ]
+    },
+    {
+      title: "I Want It That Way",
+      artist: "Backstreet Boys",
+      emoji: "💌",
+      songClue: "Thou art my blazing hearth, my solitary yearning—pray tell me why I never wish to hear thee utter the words, 'I desire it in that manner!'",
+      artistClue: "A five-man vocal brotherhood whose name evokes lads hanging out in the alley behind the main thoroughfare.",
+      decoys: [
+        { title: "Bye Bye Bye", artist: "NSYNC" },
+        { title: "Wannabe", artist: "Spice Girls" },
+        { title: "Shape of My Heart", artist: "Backstreet Boys" }
+      ]
+    },
+    {
+      title: "Africa",
+      artist: "Toto",
+      emoji: "🌍",
+      songClue: "I hear the war drums echoing tonight, yet she whispers softly—I bestow my sacred blessings upon the downpours across that vast, sun-drenched continent!",
+      artistClue: "A polished band of studio wizards sharing their short name with Dorothy's loyal little terrier from Kansas.",
+      decoys: [
+        { title: "Land Down Under", artist: "Men at Work" },
+        { title: "Take On Me", artist: "a-ha" },
+        { title: "Rosanna", artist: "Toto" }
+      ]
+    },
+    {
+      title: "Let It Go",
+      artist: "Idina Menzel",
+      emoji: "❄️",
+      songClue: "The blizzard howls upon the white mountain tonight; conceal it no longer, turn away and slam the castle doors, for the frost never troubled me anyway!",
+      artistClue: "A Broadway powerhouse who lent her soaring soprano voice to a snow-conjuring animated queen.",
+      decoys: [
+        { title: "A Whole New World", artist: "Brad Kane & Lea Salonga" },
+        { title: "How Far I'll Go", artist: "Auli'i Cravalho" },
+        { title: "Defying Gravity", artist: "Idina Menzel" }
+      ]
+    },
+    {
+      title: "Blinding Lights",
+      artist: "The Weeknd",
+      emoji: "✨",
+      songClue: "I have been wandering this desolate city alone for ages, and I proclaim I cannot slumber until I feel thy touch amidst these dazzling, sight-stealing lamps!",
+      artistClue: "A Canadian falsetto crooner whose stage moniker omits a single 'E' from the days of Saturday and Sunday.",
+      decoys: [
+        { title: "Starboy", artist: "The Weeknd" },
+        { title: "Levitating", artist: "Dua Lipa" },
+        { title: "Take On Me", artist: "a-ha" }
+      ]
+    },
+    {
+      title: "Old Town Road",
+      artist: "Lil Nas X",
+      emoji: "🤠",
+      songClue: "I shall guide my trusty steed down the ancient cobblestone thoroughfare and ride until my legs can carry me no further!",
+      artistClue: "A genre-blending cowboy rapper who paired a hip-hop moniker with a country legend on the remix.",
+      decoys: [
+        { title: "Achy Breaky Heart", artist: "Billy Ray Cyrus" },
+        { title: "Friends in Low Places", artist: "Garth Brooks" },
+        { title: "Wagon Wheel", artist: "Darius Rucker" }
+      ]
+    }
+  ];
+
+  // State
+  let numPlayers = 1;
+  let scores = [0];
+  let deck = [];
+  let roundIndex = 0;
+  let totalRounds = 6;
+  let hintLevel = 0; // 0 = none, 1 = artist clue, 2 = multiple choice
+  let roundSolved = false;
+
+  // Elements
+  const startScreen = document.getElementById("startScreen");
+  const gameScreen = document.getElementById("gameScreen");
+  const endScreen = document.getElementById("endScreen");
+  const scoreboardStrip = document.getElementById("scoreboardStrip");
+  const playerCountGrid = document.getElementById("playerCountGrid");
+  const startBtn = document.getElementById("startBtn");
+
+  const roundLabel = document.getElementById("roundLabel");
+  const turnBanner = document.getElementById("turnBanner");
+  const clueEmoji = document.getElementById("clueEmoji");
+  const pointsTag = document.getElementById("pointsTag");
+  const songClueText = document.getElementById("songClueText");
+  const artistHintBox = document.getElementById("artistHintBox");
+  const artistClueText = document.getElementById("artistClueText");
+
+  const guessForm = document.getElementById("guessForm");
+  const guessInput = document.getElementById("guessInput");
+  const mcContainer = document.getElementById("mcContainer");
+
+  const feedbackBox = document.getElementById("feedbackBox");
+  const feedbackHeading = document.getElementById("feedbackHeading");
+  const feedbackDetail = document.getElementById("feedbackDetail");
+
+  const controlsRow = document.getElementById("controlsRow");
+  const hintBtn = document.getElementById("hintBtn");
+  const giveUpBtn = document.getElementById("giveUpBtn");
+  const nextRow = document.getElementById("nextRow");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const winnerSubtitle = document.getElementById("winnerSubtitle");
+  const finalScoresList = document.getElementById("finalScoresList");
+  const playAgainBtn = document.getElementById("playAgainBtn");
+
+  // Player count selector
+  playerCountGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-count]");
+    if (!btn) return;
+    numPlayers = parseInt(btn.dataset.count, 10);
+    playerCountGrid.querySelectorAll("button").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+  });
+
+  function shuffle(array) {
+    const copy = array.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function normalizeText(str) {
+    return str
+      .toLowerCase()
+      .replace(/['’".,!?()-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function isCloseEnough(guess, answer) {
+    const g = normalizeText(guess);
+    const a = normalizeText(answer);
+    if (!g) return false;
+    if (g === a) return true;
+    // Allow matching without leading "the " or trailing parentheticals
+    const gNoThe = g.replace(/^the\s+/, "");
+    const aNoThe = a.replace(/^the\s+/, "");
+    if (gNoThe === aNoThe) return true;
+    // Allow close substring match if guess is at least 75% of answer length
+    if (g.length >= Math.max(5, Math.floor(a.length * 0.75)) && a.includes(g)) return true;
+    return false;
+  }
+
+  function currentPlayerIndex() {
+    return roundIndex % numPlayers;
+  }
+
+  function currentPointsValue() {
+    return Math.max(1, 3 - hintLevel);
+  }
+
+  function renderScoreboard(showActive) {
+    scoreboardStrip.innerHTML = "";
+    for (let i = 0; i < numPlayers; i++) {
+      const pill = document.createElement("span");
+      pill.className = "score-pill";
+      if (showActive && i === currentPlayerIndex()) {
+        pill.classList.add("active-player");
+      }
+      pill.textContent = numPlayers === 1 ? `Score: ${scores[0]}` : `P${i + 1}: ${scores[i]}`;
+      scoreboardStrip.appendChild(pill);
+    }
+  }
+
+  function startGame() {
+    scores = Array(numPlayers).fill(0);
+    // Ensure equal turns for 1-4 players (6 rounds for 1,2,3 players; 8 rounds for 4 players)
+    totalRounds = numPlayers === 4 ? 8 : 6;
+    deck = shuffle(SONG_BANK).slice(0, totalRounds);
+    roundIndex = 0;
+
+    startScreen.classList.add("hidden");
+    endScreen.classList.add("hidden");
+    gameScreen.classList.remove("hidden");
+    loadRound();
+  }
+
+  function loadRound() {
+    hintLevel = 0;
+    roundSolved = false;
+    const song = deck[roundIndex];
+    const pIdx = currentPlayerIndex();
+
+    roundLabel.textContent = `Round ${roundIndex + 1} of ${totalRounds}`;
+    turnBanner.textContent = numPlayers === 1 ? "Your Turn" : `Player ${pIdx + 1}'s Turn`;
+    clueEmoji.textContent = song.emoji;
+    songClueText.textContent = `"${song.songClue}"`;
+    pointsTag.textContent = "Worth 3 pts";
+
+    artistHintBox.classList.add("hidden");
+    artistClueText.textContent = song.artistClue;
+
+    guessForm.classList.remove("hidden");
+    guessInput.value = "";
+    mcContainer.classList.add("hidden");
+    mcContainer.innerHTML = "";
+
+    feedbackBox.classList.add("hidden");
+    feedbackBox.className = "feedback-banner hidden";
+
+    controlsRow.classList.remove("hidden");
+    hintBtn.disabled = false;
+    hintBtn.textContent = "Hint 1: Artist Clue";
+
+    nextRow.classList.add("hidden");
+    nextBtn.textContent = roundIndex + 1 === totalRounds ? "See Final Scores" : "Next Song";
+
+    renderScoreboard(true);
+  }
+
+  function revealHint() {
+    if (roundSolved) return;
+    const song = deck[roundIndex];
+
+    if (hintLevel === 0) {
+      hintLevel = 1;
+      artistHintBox.classList.remove("hidden");
+      pointsTag.textContent = "Worth 2 pts";
+      hintBtn.textContent = "Hint 2: Show Choices";
+      feedbackBox.classList.add("hidden");
+    } else if (hintLevel === 1) {
+      hintLevel = 2;
+      pointsTag.textContent = "Worth 1 pt";
+      guessForm.classList.add("hidden");
+      feedbackBox.classList.add("hidden");
+      controlsRow.innerHTML = "";
+      controlsRow.appendChild(giveUpBtn);
+      controlsRow.style.gridTemplateColumns = "1fr";
+      buildMultipleChoice(song);
+    }
+  }
+
+  function buildMultipleChoice(song) {
+    const options = shuffle([
+      { title: song.title, artist: song.artist, correct: true },
+      ...song.decoys.map(d => ({ title: d.title, artist: d.artist, correct: false }))
+    ]);
+
+    mcContainer.innerHTML = "";
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn mc-card";
+      btn.innerHTML = `<span class="mc-song">${opt.title}</span><span class="mc-artist">${opt.artist}</span>`;
+      btn.addEventListener("click", () => {
+        if (roundSolved) return;
+        if (opt.correct) {
+          finishRound(true);
+        } else {
+          finishRound(false);
+        }
+      });
+      mcContainer.appendChild(btn);
+    });
+    mcContainer.classList.remove("hidden");
+  }
+
+  function finishRound(won) {
+    roundSolved = true;
+    const song = deck[roundIndex];
+    const pIdx = currentPlayerIndex();
+    const earned = won ? currentPointsValue() : 0;
+
+    if (won) {
+      scores[pIdx] += earned;
+    }
+
+    guessForm.classList.add("hidden");
+    mcContainer.classList.add("hidden");
+    controlsRow.classList.add("hidden");
+
+    feedbackBox.classList.remove("hidden", "win", "miss", "nudge");
+    if (won) {
+      feedbackBox.classList.add("win");
+      feedbackHeading.textContent = `Huzzah! Correct! (+${earned} ${earned === 1 ? "pt" : "pts"})`;
+    } else {
+      feedbackBox.classList.add("miss");
+      feedbackHeading.textContent = "Alas! Thou missed that one.";
+    }
+    feedbackDetail.innerHTML = `The song was <strong>"${song.title}"</strong> by <strong>${song.artist}</strong>.`;
+
+    nextRow.classList.remove("hidden");
+    renderScoreboard(true);
+  }
+
+  guessForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (roundSolved) return;
+    const song = deck[roundIndex];
+    const val = guessInput.value.trim();
+    if (!val) return;
+
+    if (isCloseEnough(val, song.title)) {
+      finishRound(true);
+    } else {
+      feedbackBox.classList.remove("hidden", "win", "miss", "nudge");
+      feedbackBox.classList.add("nudge");
+      feedbackHeading.textContent = "Not quite, good bard—try again!";
+      feedbackDetail.textContent = "Check thy spelling or summon a hint below.";
+      guessInput.select();
+    }
+  });
+
+  hintBtn.addEventListener("click", revealHint);
+
+  giveUpBtn.addEventListener("click", () => {
+    if (!roundSolved) {
+      finishRound(false);
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    // Restore controlsRow structure in case Hint 2 changed it
+    controlsRow.style.gridTemplateColumns = "1fr 1fr";
+    controlsRow.innerHTML = "";
+    controlsRow.appendChild(hintBtn);
+    controlsRow.appendChild(giveUpBtn);
+
+    roundIndex++;
+    if (roundIndex < totalRounds) {
+      loadRound();
+    } else {
+      showEndScreen();
+    }
+  });
+
+  function showEndScreen() {
+    gameScreen.classList.add("hidden");
+    endScreen.classList.remove("hidden");
+    renderScoreboard(false);
+
+    const ranked = scores
+      .map((score, idx) => ({ name: numPlayers === 1 ? "Your Score" : `Player ${idx + 1}`, score }))
+      .sort((a, b) => b.score - a.score);
+
+    const topScore = ranked[0].score;
+    const winners = ranked.filter(p => p.score === topScore);
+
+    if (numPlayers === 1) {
+      winnerSubtitle.textContent = `Thou earned ${topScore} out of ${totalRounds * 3} possible points!`;
+    } else if (winners.length === 1) {
+      winnerSubtitle.textContent = `${winners[0].name} claims the Royal Jukebox Crown!`;
+    } else {
+      winnerSubtitle.textContent = `A noble tie between ${winners.map(w => w.name).join(" & ")}!`;
+    }
+
+    finalScoresList.innerHTML = "";
+    ranked.forEach((p) => {
+      const row = document.createElement("div");
+      row.className = "final-row" + (p.score === topScore ? " winner" : "");
+      row.innerHTML = `<span>${p.score === topScore ? "👑 " : ""}${p.name}</span><span>${p.score} ${p.score === 1 ? "pt" : "pts"}</span>`;
+      finalScoresList.appendChild(row);
+    });
+  }
+
+  startBtn.addEventListener("click", startGame);
+  playAgainBtn.addEventListener("click", () => {
+    endScreen.classList.add("hidden");
+    startScreen.classList.remove("hidden");
+    scoreboardStrip.innerHTML = "";
+  });
+</script>
+</body>
+</html>
